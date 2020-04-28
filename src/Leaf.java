@@ -1,0 +1,26 @@
+/* 
+ * Reference Huffman coding
+ * Copyright (c) Project Nayuki
+ * 
+ * https://www.nayuki.io/page/reference-huffman-coding
+ * https://github.com/nayuki/Reference-Huffman-coding
+ */
+
+
+/**
+ * A leaf node in a code tree. It has a symbol value. Immutable.
+ * @see CodeTree
+ */
+public final class Leaf extends Node {
+	
+	public final String symbol;  // Always non-negative
+	
+	
+	
+	public Leaf(String sym) {
+		//if (sym < 0)
+		//	throw new IllegalArgumentException("Symbol value must be non-negative");
+		symbol = sym;
+	}
+	
+}
