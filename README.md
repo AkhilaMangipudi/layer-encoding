@@ -34,6 +34,6 @@ Following dependency diagram describes the workflow for compressing a layer:
 * The retrieved object from S3 is deserialized to a Huffman Tree and all the blocks in the layer are extracted.
 
 ## Steps to run the code
-* Clone the repository using git clone https://github.com/AkhilaMangipudi/layer-encoding.git
+* Clone the repository using `git clone https://github.com/AkhilaMangipudi/layer-encoding.git`
 * As explained in the workflow, Amazon S3 is used to store the tree objects. 
 
