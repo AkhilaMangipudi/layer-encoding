@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.FileOutputStream;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -8,46 +10,49 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.amazonaws.services.s3.AmazonS3;
 
+/**
+ * Class representing the client, The client asks for a specific layer to the registry(Server).
+ * Upon receiving the huffman encodings of all the blocks in the layer, client reconstructs the layer
+ */
 public class HuffmanClient {
 
     public static void main(String[] args) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException{
-        //get the localhost IP address, if server is running on some other IP, you need to use that
+        //get the localhost IP address, if server is running on some other IP, use the server IP address
         InetAddress host = InetAddress.getLocalHost();
         Socket socket = null;
         ObjectOutputStream oos = null;
         ObjectInputStream ois = null;
-	//Send input file names, here files are equivalent to layers.
-        List<String> inputList = new ArrayList<String> ();
-        inputList.add(0, "layer_1.txt");
-        //inputList.add(1, "input_2.txt");
-        //inputList.add(2, "input_3.txt");
-        //inputList.add(3, "input_4.txt");
-        //inputList.add(4, "input_5.txt");
-        //inputList.add(5, "input_6.txt");
-        //inputList.add(6, "input_7.txt");
-        //inputList.add(7, "input_8.txt");
 	
-	HuffmanDecompress decompressor = new HuffmanDecompress();
+	HuffmanDecompress huffmanDecompress = new HuffmanDecompress();
         for(int i = 0; i < 2; i++){
             //establish socket connection to server
             socket = new Socket(host.getHostName(), 8080);
             //write to socket using ObjectOutputStream
             oos = new ObjectOutputStream(socket.getOutputStream());
             
-	    System.out.println("Sending request to Socket Server");
             if(i == 1)oos.writeObject("exit");
-            else oos.writeObject(""+ inputList.get(i));
+            else oos.writeObject(args[0]);
 
             //read the server response message
             ois = new ObjectInputStream(socket.getInputStream());
             String message = (String) ois.readObject();
-            System.out.println("Message: " + message);
-	    List<String> messageList = Arrays.asList(message.split(","));
             if(!message.equals("Hi Client Exiting")) {
-                decompressor.decompressFile(messageList.get(0), messageList.get(1));
+		String versionId = message;
+		List<String> encodingsList = (List<String>) ois.readObject();
+		Map<String, byte[]> hashToBlockMap = (Map<String, byte[]>) ois.readObject();
+                byte[] layerContent = huffmanDecompress.decompressLayer(versionId, encodingsList, hashToBlockMap);
+
+		/* Code for testing
+		File file = new File("recovered.txt");
+		FileOutputStream os = new FileOutputStream(file);
+		os.write(layerContent);
+		os.close();
+		*/
             }
             //close resources
             ois.close();

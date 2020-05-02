@@ -11,14 +11,10 @@ import java.util.Iterator;
 public class BucketDelete {
 
     public static void main(String[] args) {
-        Regions clientRegion = Regions.DEFAULT_REGION;
-        String bucketName = "*** Bucket name ***";
+        String bucketName = args[0];
 
         try {
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withCredentials(new ProfileCredentialsProvider())
-                    .withRegion(clientRegion)
-                    .build();
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
             // Delete all objects from the bucket. This is sufficient
             // for unversioned buckets. For versioned buckets, when you attempt to delete objects, Amazon S3 inserts

@@ -1,11 +1,3 @@
-/* 
- * Reference Huffman coding
- * Copyright (c) Project Nayuki
- * 
- * https://www.nayuki.io/page/reference-huffman-coding
- * https://github.com/nayuki/Reference-Huffman-coding
- */
-
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -13,8 +5,7 @@ import java.util.HashMap;
 
 
 /**
- * A table of symbol frequencies. Mutable and not thread-safe. Symbols values are
- * numbered from 0 to symbolLimit&minus;1. A frequency table is mainly used like this:
+ * A table of symbol frequencies. Mutable and not thread-safe. A frequency table is mainly used like this:
  * <ol>
  *   <li>Collect the frequencies of symbols in the stream that we want to compress.</li>
  *   <li>Build a code tree that is statically optimal for the current frequencies.</li>
@@ -26,53 +17,39 @@ import java.util.HashMap;
  */
 public final class FrequencyTable {
 	
-	/*---- Field and constructor ----*/
-	
-	// Length at least 2, and every element is non-negative.
+	//A map to hold the frequency of each symbol in the stream.
 	private HashMap<String, Integer> frequencies;
 	
-	
 	/**
-	 * Constructs a frequency table from the specified array of frequencies.
-	 * The array length must be at least 2, and each value must be non-negative.
+	 * Constructs a frequency table from the specified frequencies map.
 	 * @param freqs the array of frequencies
-	 * @throws NullPointerException if the array is {@code null}
-	 * @throws IllegalArgumentException if the array length is less than 2 or any value is negative
 	 */
 	public FrequencyTable(HashMap<String, Integer> freqs) {
-		//Objects.requireNonNull(freqs);
-		frequencies = freqs;  // Defensive copy
+		this.frequencies = freqs;  // Defensive copy
 	}
 	
-	
-	
-	/*---- Basic methods ----*/
-	
 	/**
-	 * Returns the number of symbols in this frequency table. The result is always at least 2.
+	 * Returns the number of symbols in this frequency table.
 	 * @return the number of symbols in this frequency table
 	 */
 	public int getSymbolLimit() {
 		return frequencies.size();
 	}
 	
-	
 	/**
 	 * Returns the frequency of the specified symbol in this frequency table. The result is always non-negative.
 	 * @param symbol the symbol to query
 	 * @return the frequency of the specified symbol
-	 * @throws IllegalArgumentException if the symbol is out of range
 	 */
 	public int get(String symbol) {
 		return frequencies.get(symbol);
 	}
 	
-	
 	/**
 	 * Sets the frequency of the specified symbol in this frequency table to the specified value.
 	 * @param symbol the symbol whose frequency will be modified
 	 * @param freq the frequency to set it to, which must be non-negative
-	 * @throws IllegalArgumentException if the symbol is out of range or the frequency is negative
+	 * @throws IllegalArgumentException if the symbol frequency is negative
 	 */
 	public void set(String symbol, int freq) {
 		if (freq < 0)
@@ -84,7 +61,6 @@ public final class FrequencyTable {
 	/**
 	 * Increments the frequency of the specified symbol in this frequency table.
 	 * @param symbol the symbol whose frequency will be incremented
-	 * @throws IllegalArgumentException if the symbol is out of range
 	 * @throws IllegalStateException if the symbol already has
 	 * the maximum allowed frequency of {@code Integer.MAX_VALUE}
 	 */
@@ -100,12 +76,8 @@ public final class FrequencyTable {
 		frequencies.put(symbol, freq+1);
 	}
 		
-	/*---- Advanced methods ----*/
-	
 	/**
 	 * Returns a code tree that is optimal for the symbol frequencies in this table.
-	 * The tree always contains at least 2 leaves (even if they come from symbols with
-	 * 0 frequency), to avoid degenerate trees. Note that optimal trees are not unique.
 	 * @return an optimal code tree for this frequency table
 	 */
 	public CodeTree buildCodeTree() {
@@ -126,6 +98,7 @@ public final class FrequencyTable {
 			throw new AssertionError();
 		}	
 		// Repeatedly tie together two nodes with the lowest frequency
+		// The tie is broken using the lower of the two string values of the symbols.
 		while (pqueue.size() > 1) {
 			NodeWithFrequency x = pqueue.remove();
 			NodeWithFrequency y = pqueue.remove();
@@ -141,28 +114,23 @@ public final class FrequencyTable {
 				lsm,
 				x.frequency + y.frequency));
 		}
-		
 		// Return the remaining node
-		return new CodeTree((InternalNode)pqueue.remove().node, frequencies.size());
+		return new CodeTree((InternalNode)pqueue.remove().node);
 	}
 	
 	
 	//Comparable interface is used to order the objects of the user-defined class	
 	// Helper structure for buildCodeTree()
 	private static class NodeWithFrequency implements Comparable<NodeWithFrequency> {
-		
 		public final Node node;
 		public final String lowestSymbol;
 		public final long frequency;  // Using wider type prevents overflow
-		
 		
 		public NodeWithFrequency(Node nd, String lowSym, long freq) {
 			node = nd;
 			lowestSymbol = lowSym;
 			frequency = freq;
 		}
-		
-		
 		// Sort by ascending frequency, breaking ties by ascending symbol value.
 		public int compareTo(NodeWithFrequency other) {
 			if (frequency < other.frequency)
@@ -176,7 +144,5 @@ public final class FrequencyTable {
 			else
 				return 0;
 		}
-		
 	}
-	
 }

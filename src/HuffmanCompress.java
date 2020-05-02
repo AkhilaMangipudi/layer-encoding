@@ -1,11 +1,3 @@
-/*
- * Reference Huffman coding
- * Copyright (c) Project Nayuki
- *
- * https://www.nayuki.io/page/reference-huffman-coding
- * https://github.com/nayuki/Reference-Huffman-coding
- */
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,6 +16,7 @@ import java.util.Map;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileReader;
+import java.security.NoSuchAlgorithmException;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
@@ -36,94 +29,45 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 
 /**
  * Compression application using static Huffman coding.
- * <p>Usage: java HuffmanCompress InputFile OutputFile</p>
- * <p>Then use the corresponding "HuffmanDecompress" application to recreate the original input file.</p>
- * <p>Note that the application uses an alphabet of 257 symbols - 256 symbols for the byte values
- * and 1 symbol for the EOF marker. The compressed file format starts with a list of 257
- * code lengths, treated as a canonical code, and then followed by the Huffman-coded data.</p>
+ * Divides the layer into blocks, and compresses the hash value of each block using static Huffman coding.
+ * Each time a new layer is requested by a client, the frequency table is updated and the Huffman tree is updated
+ * with the blocks from the new layer.
  */
 public class HuffmanCompress {
-
+	//A table which maintains the frequency of each symbol in the block stream.
         private FrequencyTable freqs;
 
 	public HuffmanCompress() {
 		this.freqs = new FrequencyTable(new HashMap<String, Integer>());
 	}
-	// Command line main application function.
-        public List<String> compressFile(String fileName) throws IOException {
-		List<String> resultList = new ArrayList<String>();
-		String[] parts = fileName.split("_");
-		String outputFileName = "layer_c_" + parts[1];
+	
+	/**
+ 	* Compresses all the blocks in the given layer
+ 	* @param layerName the layer for which the compression is requested
+ 	* @param block_size the size of each block in the layer
+ 	* @return See {@link CompressResult}.
+ 	*/
+        public CompressResult compressLayer(String layerName, int block_size) throws IOException, NoSuchAlgorithmException {
+		UnzipUtility unzipUtility = new UnzipUtility(block_size);
+		CompressResult compressResult = new CompressResult();
 
-	 	//Use the input to fetch the layer needed
+		//First unzip the layer and get the hash values of blocks
+		UnzipResult unzipResult = unzipUtility.unzipLayer(layerName);
+		compressResult.setHashToBlockMap(unzipResult.getHashToBlockBytesMap());
 
-                FileReader in = new FileReader(fileName);
-                FileWriter fw = new FileWriter(outputFileName);
-
-                // Read input file once to compute symbol frequencies.
-                // The resulting generated code is optimal for static Huffman coding and also canonical.
-                updateFrequencies(in);
-                //this.freqs.increment(256);  // EOF symbol gets a frequency of 1
-
-		//Time taken to build new tree with updated encodings
-		/*
-		CodeTree code = null;
-		double time = 0.0;
-		int count = 1000;
-		long startTime = 0;
-		long timeElapsed = 0;
-		for(int i = 0; i < count; i++) {
-			startTime = System.nanoTime();
-			code = this.freqs.buildCodeTree();
-			timeElapsed = System.nanoTime() - startTime;
-			time = time + timeElapsed;
-		}
-		System.out.println("Time taken for buildCodeTree is " + time / (count * 1000000) + "ms");
-		*/
+		//Update the frequency table with the frequencies of blocks from this layer
+                updateFrequencies(unzipResult.getHashList());
                 CodeTree code = this.freqs.buildCodeTree();
-		in.close();
 
-		compress(code, fileName, fw);
-		//By this time, the whole file has been compressed and written to a new output file
-		//We need to serialize the tree into a string and store it as a string onto S3
-		//
-
-		/*
-		double time = 0.0;
-                int count = 1000;
-                long startTime = 0;
-                long timeElapsed = 0;
-		String serializedTree = "";
-                for(int i = 0; i < count; i++) {
-                        startTime = System.nanoTime();
-                        serializedTree = convert(code.root); 
-                        timeElapsed = System.nanoTime() - startTime;
-                        time = time + timeElapsed;
-                }
-                System.out.println("Time taken for serializing the tree is " + time / (count * 1000000) + "ms");
-		*/
+		List<String> encodingList = encode(code, unzipResult.getHashList());
+		//Serialize the huffman tree and store it on S3
 		String serializedTree = convert(code.root);
-		System.out.println("SerializedTree length is " + serializedTree.length());
-		//System.out.println("serializedTree is " + serializedTree);
 		
 		//Now store this string onto S3 bucket serverless685
 		String objKeyName = "huffman";
 		String objVersion = "";
 		try {
 			AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
-			/*
-			double time = 0.0;
-	                int count = 1000;
-        	        long startTime = 0;
-                	long timeElapsed = 0;
-                	for(int i = 0; i < count; i++) {
-                        	startTime = System.nanoTime();
-                        	PutObjectResult putResult = s3Client.putObject("serverless685", objKeyName, serializedTree);
-                        	timeElapsed = System.nanoTime() - startTime;
-                        	time = time + timeElapsed;
-                	}
-			System.out.println("Time taken for putObject into S3 is " + (time) / (count * 1000000) + " ms");
-			*/
 			PutObjectResult putResult = s3Client.putObject("serverless685", objKeyName, serializedTree);
 			objVersion = putResult.getVersionId();
 			System.out.println("Version number of the object is "  + putResult.getVersionId());
@@ -133,11 +77,16 @@ public class HuffmanCompress {
 		} catch (SdkClientException e) {
 			e.printStackTrace();
 		}
-		resultList.add(0, outputFileName);
-		resultList.add(1, objVersion);
-		return resultList;
+		compressResult.setVersionId(objVersion);
+		compressResult.setEncodings(encodingList);
+		return compressResult;
         }
 
+	/**
+ 	* Converts the tree into a string using pre-order traversal
+ 	* @param node The root of the tree
+ 	* @return String the serialized version of the tree.
+ 	*/
 	public String convert(Node node) {
 		String result = "";
 		try {
@@ -150,6 +99,9 @@ public class HuffmanCompress {
                 return result;
 	}
 
+	/**
+ 	* Helper function for serializing the huffman tree.
+ 	*/
 	private StringBuilder serial(StringBuilder str, Node root) {
                 if(root == null) return str.append("#");
 		if(root instanceof InternalNode) {
@@ -167,31 +119,29 @@ public class HuffmanCompress {
 		}
                 return str;
         }
-        // Returns a frequency table based on the bytes in the given file.
-        // Also contains an extra entry for symbol 256, whose frequency is set to 0.
-        private void updateFrequencies(FileReader in) throws IOException {
-                try (BufferedReader br = new BufferedReader(in)) {
-			String readLine = null;
-                        while ((readLine = br.readLine()) != null) {
-				this.freqs.increment(readLine);
-                        }
-                }
-        }
 
-
-	//This is my compress function
-	static void compress(CodeTree code, String fileName, FileWriter fw) throws IOException {
-		HuffmanEncoder enc = new HuffmanEncoder(fw);
-		enc.codeTree = code;
-		String readLine = null;
-		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-			while ((readLine = br.readLine()) != null) {
-				enc.write(readLine);
-			}	
-		//enc.write(256); //EOF
+	/**
+ 	* Updates the frequencies of the blocks in {@Link FrequencyTable}
+ 	* @param hashList the list of hash values of blocks in the current layer
+ 	*/
+	private void updateFrequencies(List<String> hashList) {
+		for(String hash : hashList) {
+			this.freqs.increment(hash);
 		}
-		fw.close();
 	}
 
+	/**
+ 	* Encodes each block into a string of 1s and 0s using the Huffman tree
+ 	* @param codeTree the Huffman tree built
+ 	* @param hashList the list of hash values of blocks
+ 	* @return list of encodings of blocks in the layer.
+ 	*/
+	public List<String> encode(CodeTree codeTree, List<String> hashList) throws IOException {
+		List<String> encodingList = new ArrayList<String>();
+		for(String hash : hashList) {
+			encodingList.add(codeTree.getCode(hash));
+		}
+		return encodingList;
+	}
 }
 

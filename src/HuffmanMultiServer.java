@@ -6,15 +6,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.ArrayList;
+import java.security.NoSuchAlgorithmException;
 
 public class HuffmanMultiServer {
-
     //static ServerSocket variable
     private static ServerSocket server;
     //socket server port on which it will listen
     private static int port = 8080;
 
-    public static void main(String args[]) throws IOException, ClassNotFoundException{
+    public static void main(String args[]) throws IOException, ClassNotFoundException, NoSuchAlgorithmException {
         //create the socket server object
         server = new ServerSocket(port);
         //keep listens indefinitely until receives 'exit' call or program terminates
@@ -41,13 +41,8 @@ public class HuffmanMultiServer {
 	    } catch (Exception e) {
 		socket.close();
 	    }
-            //socket.close();
         }
-        //System.out.println("Shutting down Socket server!!");
-        //close the ServerSocket object
-        //server.close();
     }
-
 }
 
 class ClientHandler extends Thread {
@@ -66,10 +61,8 @@ class ClientHandler extends Thread {
 	}
 	
 	@Override
-	public void run() {
-		
+	public void run() {		
 		String receivedMessage;
-		String resultMessage;
 		while(true) {
 			try {
 				receivedMessage = (String) this.ois.readObject();
@@ -82,16 +75,19 @@ class ClientHandler extends Thread {
                				break;
             			}
 				//Call the encoder function here
-				List<String> resultList = this.huffmanCompress.compressFile(receivedMessage);
-				resultMessage = resultList.get(0) + "," + resultList.get(1);
-				//Write object to output stream
-				this.oos.writeObject(resultMessage);
+            			CompressResult compressResult = huffmanCompress.compressLayer(receivedMessage, 1000); // 1000 is the block size
+            			//write object to Socket
+            			this.oos.writeObject(compressResult.getVersionId());
+            			this.oos.writeObject(compressResult.getEncodings());
+            			this.oos.writeObject(compressResult.getHashToBlockMap());
 				this.ois.close();
 				this.oos.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
 				System.out.println("Class not found exception");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
 			}
 		}
 	}
