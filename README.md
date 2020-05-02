@@ -1,5 +1,5 @@
 # layer-encoding
-The task is to 
+The task is to compress a 
 ## Dependencies
 * Java 8. Please refer [Java 8 installation](https://www.javahelps.com/2015/03/install-oracle-jdk-in-ubuntu.html "Java 8 installation") for Java installation instructions.
 * AWS services like S3 and DynamoDB have been used. Please download [AWS SDK for Java](https://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip "AWS SDK for Java") which provides Java APIs for AWS services.
@@ -48,7 +48,7 @@ Following dependency diagram describes the workflow for compressing a layer:
 
 ## Observations: Amazon S3 and Amazon DynamoDB ##
 S3 and Dynamo are two major choices in the category of key-value stores. Both S3 and DynamoDB require no initialization handshakes to establish a connection, can scale on demand, and AWS charges for their actual utilization. Below are few factors that were considered while making a choice between S3 and DynamoDB:
-* **Item size** - The serialized tree object is supposed to be stored and on an average, the size of this item comes to around 250 KB. This is potentially huge for Dynamo as Dynamo is preferred for storing small objects.
+* **Item size** - The serialized tree object is supposed to be stored and on an average, the size of this item comes to around 250 KB. This is potentially huge for Dynamo as Dynamo is preferred for storing small objects. Dynamo has a size limit of 400 KB per item, and there is a chance that our object crosses 400 KB.
 * **Read time** - DynamoDB is usually faster than Amazon S3 and we can configure ProvisionedThroughput of a table in Dynamo to improve the performance. Since the object is larger than the typical objects stored in Dynamo, the read time of an object for a table with ProvisionedCapacity 25 is ~160 ms, whereas the read time from S3 is ~40 ms.
 * **Pricing** - For storage, S3 is almost 10 times cheaper than that of Dynamo. For read and write access requests, keeping in mind the size of our object, the price comes out to be approximately same.
 * **Consistency** - S3 provides read-after-write consistency for PUTS of new objects and eventual consistency for updates on objects. DynamoDB provides eventual consistency, but also has an option for strong read consistency. With strong read consistency enabled, the access time is expected to atleast double.
