@@ -1,5 +1,7 @@
 # layer-encoding
-The task is to compress a 
+The task is to compress a layer(a file structure) and send it across the network. For compression, the contents(bytes) of a layer are divided into fixed size blocks and the md5 hash value of each block is computed. A Huffman tree is built based on the frequencies of the blocks and the blocks are encoded into binary bit strings. These encodings are sent across the network from server to clients.
+
+All the tasks have been performed on Amazon EC2 t2.micro instances.
 ## Dependencies
 * Java 8. Please refer [Java 8 installation](https://www.javahelps.com/2015/03/install-oracle-jdk-in-ubuntu.html "Java 8 installation") for Java installation instructions.
 * AWS services like S3 and DynamoDB have been used. Please download [AWS SDK for Java](https://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip "AWS SDK for Java") which provides Java APIs for AWS services.
