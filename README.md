@@ -40,6 +40,7 @@ Following dependency diagram describes the workflow for compressing a layer:
 * Set up the AWS credentials and java CLASSPATH as described above.
 * As explained in the workflow, Amazon S3 is used to store the tree objects. First create an S3 bucket which will be used later to store objects. To create a bucket, run the command `java BucketCreate <bucket-name>`. I created a bucket "serverless685" and used it for all my operations.
 * Start the Huffman Server on the terminal using `java HuffmanServer`. The server will be running and be waiting for client connections.
+If you run out of heap space, please run `java -Xms512m -Xmx1024m HuffmanServer`.
 * Run the Huffman Client on a terminal and request for a layer using `java HuffmanClient <layer-name>`. This code assumes that the layer is a zip file present in the current directory.
 * You can either delete the bucket once all the operations are over or retain it. To delete a bucket run `java BucketDelete <bucket-name>`.
 #### One server - Multiple clients ####
