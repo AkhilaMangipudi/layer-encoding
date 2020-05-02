@@ -11,7 +11,28 @@
 * Set the Java CLASSPATH variable to run the executables without having to type the full path of the command. Following is my CLASSPATH variable. Set yours according to where you downloaded your libraries.
 > export CLASSPATH=../../commons-compress-1.20/commons-compress-1.20.jar:../../commons-io-2.6/commons-io-2.6.jar:../../aws-java-sdk-1.11.762/third-party/lib/joda-time-2.8.1.jar:../../aws-java-sdk-1.11.762/third-party/lib/httpcore-4.4.11.jar:../../aws-java-sdk-1.11.762/third-party/lib/httpclient-4.5.9.jar:../../aws-java-sdk-1.11.762/third-party/lib/jackson-annotations-2.6.0.jar:../../aws-java-sdk-1.11.762/third-party/lib/jackson-core-2.6.7.jar:../../aws-java-sdk-1.11.762/third-party/lib/jackson-databind-2.6.7.3.jar:../../aws-java-sdk-1.11.762/third-party/lib/commons-logging-1.1.3.jar:../lib:/:../../aws-java-sdk-1.11.762/lib/aws-java-sdk-1.11.762.jar
 ## Workflow
+Following dependency diagram describes the workflow for compressing a layer:
+
 ![alt text](https://github.com/AkhilaMangipudi/layer-encoding/blob/master/serverless_uml.png?raw=true)
+
+### HuffmanServer ###
+* A Http server which listens to a port and waits for clients to connect.
+* Responsible for dispatching calls to HuffmanCompress application to compress the layer requested by the client.
+
+### HuffmanClient ###
+* Connects to a server and requests for a layer.
+* Upon receiving the compressed layer, invokes the HuffmanDecompress application to retrieve the blocks of the layer.
+
+### HuffmanCompress ###
+* Updates the Huffman tree for every layer.
+* A given layer is divided into blocks based on a pre-determined block_size and the md5 hash value of each block is computed.
+* Based on the frequencies of the blocks in the layer, Huffman tree is updated and each block is encoded into a binary bit string.
+* The updated Huffman tree is serialized into a string and the version is stored on Amazon S3.
+
+### HuffmanDecompress ###
+* The Huffman tree required for decoding the encoded blocks is retrieved from Amazon S3 using the versionId of the tree.
+* The retrieved object from S3 is deserialized to a Huffman Tree and all the blocks in the layer are extracted.
+
 
 
 ## Steps to run the code
