@@ -24,7 +24,9 @@ public class HuffmanServer {
         server = new ServerSocket(port);
         //keep listens indefinitely until receives 'exit' call or program terminates
 
-	HuffmanCompress huffmanCompress = new HuffmanCompress();
+        //Parameter passed to the constructor here is the threshold frequencies above which we consider as entries for
+        //huffman tree
+        HuffmanCompress huffmanCompress = new HuffmanCompress(2);
         while(true){
             //creating socket and waiting for client connection
             Socket socket = server.accept();
@@ -32,15 +34,15 @@ public class HuffmanServer {
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             //convert ObjectInputStream object to String
             String layerName = (String) ois.readObject();
-            
-	    System.out.println("Layer for which we need the encoding is  " + layerName);
+
+            System.out.println("Layer for which we need the encoding is  " + layerName);
             if(layerName.equalsIgnoreCase("exit")) {
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
                 oos.writeObject("Hi Client" + " Exiting");
                 ois.close();
                 oos.close();
                 socket.close();
-		break;
+                break;
             }
 
             //create ObjectOutputStream object
@@ -49,8 +51,8 @@ public class HuffmanServer {
             CompressResult compressResult = huffmanCompress.compressLayer(layerName, 1000); // 1000 is the block size
             //write object to Socket
             oos.writeObject(compressResult.getVersionId());
-	    oos.writeObject(compressResult.getEncodings());
-	    oos.writeObject(compressResult.getHashToBlockMap());
+            oos.writeObject(compressResult.getEncodings());
+            oos.writeObject(compressResult.getHashToBlockBucketName());
             //close resources
             ois.close();
             oos.close();
@@ -62,4 +64,3 @@ public class HuffmanServer {
     }
 
 }
-
