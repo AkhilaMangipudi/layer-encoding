@@ -8,27 +8,27 @@ import java.util.HashMap;
  */
 public class UnzipResult {
 
-	private List<String> hashList;
-	private Map<String, byte[]> hashToBlockBytesMap;
+        private List<String> hashList;
+        private String hashToBlockBucketName;
 
-	public UnzipResult() {
-		this.hashList = new ArrayList<String>();
-		this.hashToBlockBytesMap = new HashMap<String, byte[]>();
-	}
+        public UnzipResult() {
+                this.hashList = new ArrayList<String>();
+                this.hashToBlockBucketName = "";
+        }
 
-	public void setHashList(List<String> l) {
-		this.hashList = l;
-	}
+        public void setHashList(List<String> l) {
+                this.hashList = l;
+        }
 
-	public List<String> getHashList() {
-		return this.hashList;
-	}
+        public List<String> getHashList() {
+                return this.hashList;
+        }
 
-	public void setHashToBlockBytesMap(Map<String, byte[]> m) {
-		this.hashToBlockBytesMap = m;
-	}
+        public void setHashToBlockBucketName(String s) {
+                this.hashToBlockBucketName = s;
+        }
 
-	public Map<String, byte[]> getHashToBlockBytesMap() {
-		return this.hashToBlockBytesMap;
-	}
+        public String getHashToBlockBucketName() {
+                return this.hashToBlockBucketName;
+        }
 }
