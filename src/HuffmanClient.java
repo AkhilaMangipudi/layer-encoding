@@ -27,14 +27,14 @@ public class HuffmanClient {
         Socket socket = null;
         ObjectOutputStream oos = null;
         ObjectInputStream ois = null;
-	
-	HuffmanDecompress huffmanDecompress = new HuffmanDecompress();
+
+        HuffmanDecompress huffmanDecompress = new HuffmanDecompress();
         for(int i = 0; i < 2; i++){
             //establish socket connection to server
             socket = new Socket(host.getHostName(), 8080);
             //write to socket using ObjectOutputStream
             oos = new ObjectOutputStream(socket.getOutputStream());
-            
+
             if(i == 1)oos.writeObject("exit");
             else oos.writeObject(args[0]);
 
@@ -42,17 +42,18 @@ public class HuffmanClient {
             ois = new ObjectInputStream(socket.getInputStream());
             String message = (String) ois.readObject();
             if(!message.equals("Hi Client Exiting")) {
-		String versionId = message;
-		List<String> encodingsList = (List<String>) ois.readObject();
-		Map<String, byte[]> hashToBlockMap = (Map<String, byte[]>) ois.readObject();
-                byte[] layerContent = huffmanDecompress.decompressLayer(versionId, encodingsList, hashToBlockMap);
+                String versionId = message;
+                List<String> encodingsList = (List<String>) ois.readObject();
+                String hashToBlockBucketName = (String) ois.readObject();
+                byte[] layerContent = huffmanDecompress.decompressLayer(versionId, encodingsList, hashToBlockBucketName);
 
-		/* Code for testing
-		File file = new File("recovered.txt");
-		FileOutputStream os = new FileOutputStream(file);
-		os.write(layerContent);
-		os.close();
-		*/
+                /*
+                //Code for testing
+                File file = new File("recovered.txt");
+                FileOutputStream os = new FileOutputStream(file);
+                os.write(layerContent);
+                os.close();
+                */
             }
             //close resources
             ois.close();
@@ -61,4 +62,3 @@ public class HuffmanClient {
         }
     }
 }
-
