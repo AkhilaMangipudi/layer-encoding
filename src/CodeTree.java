@@ -20,65 +20,63 @@ import java.util.Map;
  * </ul>
  */
 public final class CodeTree {
-	
-	/**
-	 * The root node of this code tree (not {@code null}).
-	 */
-	public final InternalNode root;
-	
-	//Stores the code for each symbol, as a String
-	private Map<String, String> codes;
-	/**
-	 * Constructs a code tree from the specified tree of nodes.
-	 * @param root the root of the tree
-	 * @throws NullPointerException if tree root is {@code null}
-	 */
-	public CodeTree(InternalNode root) {
-		this.root = Objects.requireNonNull(root);	
-		codes = new HashMap<String, String>();  // Initially all null
-		buildCodeList(root, "");  // Fill 'codes' with appropriate data
-	}
-	
-	
-	// Recursive helper function for the constructor
-	// 0 is added for the left branch and 1 for the right branch
-	private void buildCodeList(Node node, String prefix) {
-		if (node instanceof InternalNode) {
-			InternalNode internalNode = (InternalNode)node;
-			
-			prefix = prefix + "0";
-			buildCodeList(internalNode.leftChild , prefix);
-			prefix = prefix.substring(0, prefix.length() - 1);
-			
-			prefix = prefix + "1";
-			buildCodeList(internalNode.rightChild, prefix);
-			prefix = prefix.substring(0, prefix.length() - 1);
-			
-		} else if (node instanceof Leaf) {
-			Leaf leaf = (Leaf)node;
-			if(!codes.containsKey(leaf.symbol)) {
-				codes.put(leaf.symbol, prefix);
-			}
-			else
-				throw new IllegalArgumentException("Symbol has more than one code");
-		} else {
-			throw new AssertionError("Illegal node type");
-		}
-	}
-	
-	
-	/**
-	 * Returns the Huffman code for the specified symbol, which is a String that contains 0s and 1s.
-	 * @param symbol the symbol to query
-	 * @return a String which contains 0s and 1s
-	 * @throws IllegalArgumentException if the symbol is negative, or no
-	 * Huffman code exists for it (e.g. because it had a zero frequency)
-	 */
-	public String getCode(String symbol) {
-		if (codes.get(symbol) == "")
-			throw new IllegalArgumentException("No code for given symbol");
-		else
-			return codes.get(symbol);
-	}
-	
+
+        /**
+         * The root node of this code tree (not {@code null}).
+         */
+        public final InternalNode root;
+
+        //Stores the code for each symbol, as a String
+        private Map<String, String> codes;
+        /**
+         * Constructs a code tree from the specified tree of nodes.
+         * @param root the root of the tree
+         * @throws NullPointerException if tree root is {@code null}
+         */
+        public CodeTree(InternalNode root) {
+                this.root = Objects.requireNonNull(root);
+                codes = new HashMap<String, String>();  // Initially all null
+                buildCodeList(root, "");  // Fill 'codes' with appropriate data
+        }
+
+
+        // Recursive helper function for the constructor
+        // 0 is added for the left branch and 1 for the right branch
+        private void buildCodeList(Node node, String prefix) {
+                if (node instanceof InternalNode) {
+                        InternalNode internalNode = (InternalNode)node;
+
+                        prefix = prefix + "0";
+                        buildCodeList(internalNode.leftChild , prefix);
+                        prefix = prefix.substring(0, prefix.length() - 1);
+
+                        prefix = prefix + "1";
+                        buildCodeList(internalNode.rightChild, prefix);
+                        prefix = prefix.substring(0, prefix.length() - 1);
+
+                } else if (node instanceof Leaf) {
+                        Leaf leaf = (Leaf)node;
+                        if(!codes.containsKey(leaf.symbol)) {
+                                codes.put(leaf.symbol, prefix);
+                        }
+                        else
+                                throw new IllegalArgumentException("Symbol has more than one code");
+                } else {
+                        throw new AssertionError("Illegal node type");
+                }
+        }
+
+
+        /**
+         * Returns the Huffman code for the specified symbol, which is a String that contains 0s and 1s.
+         * @param symbol the symbol to query
+         * @return a String which contains 0s and 1s, returns "#" if the symbol is not present in the tree.
+         */
+        public String getCode(String symbol) {
+                if (!codes.containsKey(symbol))
+                        return "#";
+                else
+                        return codes.get(symbol);
+        }
+
 }
