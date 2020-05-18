@@ -9,42 +9,42 @@ import java.util.ArrayList;
 
 public class CompressResult {
 
-	//VersionId of the tree stored in Amazon S3
-	private String versionId;
-	
-	//Encodings of the blocks present in the layer
-	private List<String> encodings;
+        //VersionId of the tree stored in Amazon S3
+        private String versionId;
 
-	//Mapping from hash value of a block to its byte content.
-	private Map<String, byte[]> hashToBlockMap;
+        //Encodings of the blocks present in the layer
+        private List<String> encodings;
 
-	public CompressResult() {
-		this.versionId = "";
-		this.encodings = new ArrayList<String>();
-		this.hashToBlockMap = new HashMap<String, byte[]>();
-	}
+        //S3 bucketname which contains mappings from hash value of a block to the block bytes
+        private String hashToBlockBucketName;
 
-	public void setVersionId(String v) {
-		this.versionId = v;	
-	}
+        public CompressResult() {
+                this.versionId = "";
+                this.encodings = new ArrayList<String>();
+                this.hashToBlockBucketName = "";
+        }
 
-	public String getVersionId() {
-		return this.versionId;
-	}
+        public void setVersionId(String v) {
+                this.versionId = v;
+        }
 
-	public void setEncodings(List<String> l) {
-		this.encodings = l;
-	}
+        public String getVersionId() {
+                return this.versionId;
+        }
 
-	public List<String> getEncodings() {
-		return this.encodings;
-	}
-		
-	public void setHashToBlockMap(Map<String, byte[]> m) {
-		this.hashToBlockMap = m;
-	}
+        public void setEncodings(List<String> l) {
+                this.encodings = l;
+        }
 
-	public Map<String, byte[]> getHashToBlockMap() {
-		return this.hashToBlockMap;
-	}
+        public List<String> getEncodings() {
+                return this.encodings;
+        }
+
+        public void setHashToBlockBucketName(String s) {
+                this.hashToBlockBucketName = s;
+        }
+
+        public String getHashToBlockBucketName() {
+                return this.hashToBlockBucketName;
+        }
 }
