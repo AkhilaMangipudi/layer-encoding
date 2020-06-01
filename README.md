@@ -41,6 +41,7 @@ Following dependency diagram describes the workflow for compressing a layer:
 * All the executables are in the `layer-encoding\lib` directory. If you make changes to some file, use the following command to compile- `javac -d ../lib HuffmanServer.java`.
 * Set up the AWS credentials and java CLASSPATH as described above.
 * As explained in the workflow, Amazon S3 is used to store the tree objects. First create an S3 bucket which will be used later to store objects. To create an unversioned bucket, run the command `java UnversionedBucketCreate <bucket-name>`. I created an unversioned bucket "hashtoblocks" and used it for all my operations. To create a versioned bucket, run the command `java VersionedBucketCreate <bucket-name>`. I created a versioned bucket "serverless685" for my operations.
+* The frequency table which stores the frequency of each block is globally stored on Amazon dynamo in a table. First create a table in dynamo, which will be later used to store the frequencies of blocks. To do the same, run the command `java CreateTable <table-name>`. I created a table "encodings" for my operations.
 * Start the Huffman Server on the terminal using `java HuffmanServer`. The server will be running and be waiting for client connections.
 If you run out of heap space, please run `java -Xms512m -Xmx1024m HuffmanServer`.
 * Run the Huffman Client on a terminal and request for a layer using `java HuffmanClient <layer-name>`. This code assumes that the layer is a zip file present in the current directory.
