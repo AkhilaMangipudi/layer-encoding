@@ -28,8 +28,8 @@ public class CreateTable {
         try {
             System.out.println("Attempting to create table; please wait...");
             Table table = dynamoDB.createTable(tableName,
-                Arrays.asList(new KeySchemaElement("version_num", KeyType.HASH)), // Sort key
-                Arrays.asList(new AttributeDefinition("version_num", ScalarAttributeType.N)),
+                Arrays.asList(new KeySchemaElement("hash_value", KeyType.HASH)), // Sort key
+                Arrays.asList(new AttributeDefinition("hash_value", ScalarAttributeType.S)),
                 new ProvisionedThroughput(25L, 25L));
             table.waitForActive();
             System.out.println("Success.  Table status: " + table.getDescription().getTableStatus());
@@ -42,4 +42,3 @@ public class CreateTable {
 
     }
 }
-
