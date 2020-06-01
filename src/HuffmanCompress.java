@@ -13,6 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileReader;
@@ -26,6 +27,17 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
+
 
 /**
  * Compression application using static Huffman coding.
@@ -33,6 +45,7 @@ import com.amazonaws.services.s3.model.PutObjectResult;
  * Each time a new layer is requested by a client, the frequency table is updated and the Huffman tree is updated
  * with the blocks from the new layer.
  */
+
 public class HuffmanCompress {
         //A table which maintains the frequency of each symbol in the block stream.
         private FrequencyTable freqs;
@@ -40,9 +53,13 @@ public class HuffmanCompress {
         //Blocks of freq  > thresholdFrequency are only added to the Huffman tree and encoded
         private int thresholdFrequency;
 
+        //Initialzing the dynamoDB table
+        private AmazonDynamoDB dynamoClient;
+
         public HuffmanCompress(int thresholdFrequency) {
                 this.freqs = new FrequencyTable(new HashMap<String, Integer>());
                 this.thresholdFrequency = thresholdFrequency;
+                this.dynamoClient = AmazonDynamoDBClientBuilder.standard().withRegion("us-east-2").build();
         }
 
         /**
@@ -137,8 +154,37 @@ public class HuffmanCompress {
         * @param hashList the list of hash values of blocks in the current layer
         */
         private void updateFrequencies(List<String> hashList) {
+                //Get the entire frequency table from Dynamo and copy it to frequency table locally.
+                //Then using the blocks in the layer, update the frequency table and the dynamoDB simulatenously
+                //Use this local frequency table for building the huffman tree
+                //
+
+                DynamoDB dynamoDB = new DynamoDB(this.dynamoClient);
+                Table table = dynamoDB.getTable("freq_table");
+                this.freqs = new FrequencyTable(new HashMap<String, Integer>());
+                //Scan the entire table from dynamo and copy it to frequency table.
+                ScanSpec scanSpec = new ScanSpec().withProjectionExpression("hash_value, freq");
+
+                try {
+                        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+
+                        Iterator<Item> iter = items.iterator();
+                        while (iter.hasNext()) {
+                                Item item = iter.next();
+                                String hash_value = item.getString("hash_value");
+                                int frequency = item.getInt("freq");
+                                this.freqs.set(hash_value, frequency);
+                         }
+
+                 } catch (Exception e) {
+                        System.err.println("Unable to scan the table:");
+                        System.err.println(e.getMessage());
+                }
+
                 for(String hash : hashList) {
                         this.freqs.increment(hash);
+                        //Update in dynamo also
+                        PutItemOutcome outcome = table.putItem(new Item().withPrimaryKey("hash_value", hash).withNumber("freq", this.freqs.get(hash)));
                 }
         }
 
@@ -150,15 +196,21 @@ public class HuffmanCompress {
         */
         public List<String> encode(CodeTree codeTree, List<String> hashList) throws IOException {
                 List<String> encodingList = new ArrayList<String>();
+                int total_blocks = 0;
+                int encoded_blocks = 0;
                 for(String hash : hashList) {
+                        total_blocks = total_blocks + 1;
                         //Only some blocks have encoding, if they don't have an encoding, just send the hash directly
                         if ("#".equals(codeTree.getCode(hash))) {
                                 encodingList.add(hash);
                         }
                         else {
+                                encoded_blocks = encoded_blocks + 1;
                                 encodingList.add(codeTree.getCode(hash));
                         }
                 }
+                //System.out.println("Total number of blocks: " + total_blocks);
+                //System.out.println("Number of encoded blocks: " + encoded_blocks);
                 return encodingList;
         }
 }
